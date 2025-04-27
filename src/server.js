@@ -9,15 +9,20 @@ import express from 'express'
 import exitHook from 'async-exit-hook'
 import { CONNECT_DB, CLOSE_DB } from '~/config/mongodb'
 import { env } from '~/config/environment'
+import { APIs_V1 } from './routes/v1'
+import { errorHandlingMiddleware } from './middlewares/errorHandlingMiddleware'
+import cors from 'cors'
+import { corsOptions } from './config/cors'
 
-
-const START_SERVER = () =>{
+const START_SERVER = () => {
   const app = express()
 
-  app.get('/', async (req, res) => {
-    // console.log(await GET_DB().listCollections().toArray())
-    res.end('<h1>Hello World!</h1><hr>')
-  })
+  app.use(cors(corsOptions))
+  app.use(express.json())
+
+  app.use('/v1', APIs_V1)
+  //middleware xu ly loi tap trung
+  app.use(errorHandlingMiddleware)
 
   app.listen(env.APP_PORT, env.APP_HOST, () => {
   // eslint-disable-next-line no-console
