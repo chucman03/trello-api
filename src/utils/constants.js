@@ -5,7 +5,7 @@
  */
 export const WHITELIST_DOMAINS = [
     // 'http://localhost:5173'
-    'https://trello-note-app.vercel.app/'
+    'https://trello-note-app.vercel.app'
 ]
 export const BOARD_TYPES = {
     PUBLIC: 'public',
