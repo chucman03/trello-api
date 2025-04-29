@@ -15,6 +15,18 @@ const createNew = async (req, res, next) => {
     next(error)
   }
 }
+
+const update = async (req, res, next) => {
+  try {
+    const boardId = req.params.id
+    const updatedBoard = await boardService.update(boardId, req.body)
+
+    res.status(StatusCodes.OK).json(updatedBoard)
+    // throw new ApiError(StatusCodes.BAD_GATEWAY,  'test errow')
+  } catch (error) {
+    next(error)
+  }
+}
 const getDetails = async (req, res, next) => {
   try {
     const boardId = req.params.id
@@ -27,7 +39,20 @@ const getDetails = async (req, res, next) => {
   }
 }
 
+const moveCardToDifferentColumn = async (req, res, next) => {
+  try {
+    const result = await boardService.moveCardToDifferentColumn(req.body)
+
+    res.status(StatusCodes.OK).json(result)
+    // throw new ApiError(StatusCodes.BAD_GATEWAY,  'test errow')
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const boardController = {
   createNew,
-  getDetails
+  getDetails,
+  update,
+  moveCardToDifferentColumn
 }
