@@ -8,7 +8,6 @@ import { boardModel } from '~/models/boardModel'
 import { cardModel } from '~/models/cardModel'
 
 const createNew = async (reqBody) => {
-  // eslint-disable-next-line no-useless-catch
   try {
     const newColumn = {
       ...reqBody
