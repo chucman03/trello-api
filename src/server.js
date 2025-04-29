@@ -24,10 +24,21 @@ const START_SERVER = () => {
   //middleware xu ly loi tap trung
   app.use(errorHandlingMiddleware)
 
-  app.listen(env.APP_PORT, env.APP_HOST, () => {
-  // eslint-disable-next-line no-console
-    console.log(`Hello ${env.AUTHOR}, I am running at http://${env.APP_HOST}:${env.APP_PORT}/`)
-  })
+  if (env.BUILD_MODE === 'production') {
+    // môi trường production
+    app.listen(process.env.PORT, () => {
+      // eslint-disable-next-line no-console
+        console.log(`production Hello ${env.AUTHOR}, I am running at port ${process.env.PORT}`)
+      })
+  } else{
+    // môi trường dev
+    app.listen(env.LOCAL_DEV_APP_PORT, env.LOCAL_DEV_APP_HOST, () => {
+      // eslint-disable-next-line no-console
+        console.log(`Hello ${env.AUTHOR}, I am running at http://${env.LOCAL_DEV_APP_HOST}:${env.LOCAL_DEV_APP_PORT}/`)
+      })
+  }
+
+ 
 
   exitHook(() => {
     CLOSE_DB()
