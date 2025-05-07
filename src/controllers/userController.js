@@ -7,9 +7,10 @@ const createNew = async (req, res, next) => {
   try {
 
     const createdUser = await userService.createNew(req.body)
-
     res.status(StatusCodes.CREATED).json(createdUser)
+    
   } catch (error) {
+    console.log('result',error)
     next(error)
   }
 }
@@ -18,9 +19,10 @@ const verifyAccount = async (req, res, next) => {
   try {
 
     const result = await userService.verifyAccount(req.body)
-
+    
     res.status(StatusCodes.OK).json(result)
   } catch (error) {
+    
     next(error)
   }
 }
@@ -74,6 +76,17 @@ const refreshToken = async (req, res, next) => {
   }
 }
 
+const update = async (req, res, next) => {
+  try {
+    const userId = req.jwtDecoded._id
+    const userAvatarFile = req.file
+    const updatedUser = await userService.update(userId, req.body, userAvatarFile)
+    res.status(StatusCodes.OK).json(updatedUser)
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const userController = {
-  createNew, verifyAccount, login, logout, refreshToken
+  createNew, verifyAccount, login, logout, refreshToken, update
 }

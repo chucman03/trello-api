@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes'
-import { JwtProvider } from '~/providers/JWTProvider'
+import { JwtProvider } from '~/providers/JwtProvider'
 import { env } from '~/config/environment'
 import ApiError from '~/utils/ApiError'
 

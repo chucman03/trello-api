@@ -8,8 +8,9 @@ import bcryptjs from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
 import { WEBSTE_DOMAIN } from '~/utils/constants'
 import { BrevoProvider } from '~/providers/BrevoProvider'
-import { JwtProvider } from '~/providers/JWTProvider'
+import { JwtProvider } from '~/providers/JwtProvider'
 import { env } from '~/config/environment'
+import { CloudinaryProvider } from '~/providers/CloudinaryProvider'
 
 const createNew = async (reqBody) => {
   // eslint-disable-next-line no-useless-catch
@@ -25,13 +26,14 @@ const createNew = async (reqBody) => {
     const newUser = {
       email: reqBody.email,
       password: bcryptjs.hashSync(reqBody.password, 8), //8 là độ phức tạp
-      userName: nameFromEmail,
+      username: nameFromEmail,
       displayName: nameFromEmail,
       verifyToken: uuidv4()
     }
 
     const createdUser = await userModel.createNew(newUser)
     const getNewUser = await userModel.findOneById(createdUser.insertedId)
+    
     // gửi email xác thực
     const verficationLink = `${WEBSTE_DOMAIN}/account/verification?email=${getNewUser.email}&token=${getNewUser.verifyToken}`
     const customSubject = 'Trello app: please verify your email'
@@ -43,6 +45,7 @@ const createNew = async (reqBody) => {
     // gọi tới provider gửi mail
     await BrevoProvider.sendEmail(getNewUser.email, customSubject, htmlContent)
     // return data cho người dùng
+    
     return pickUser(getNewUser)
   } catch (error) {
     throw error
@@ -71,7 +74,7 @@ const login = async (reqBody) => {
     const existUser = await userModel.findOneByEmail(reqBody.email)
     if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
     if (!existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Account is not active')
-    if (bcryptjs.compareSync(reqBody.password, existUser.password)) {
+    if (!bcryptjs.compareSync(reqBody.password, existUser.password)) {
       // reqBody.password: 12345a
       // existUser.password: dang da hash
       throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your email or password is incorect!')
@@ -120,7 +123,43 @@ const refreshToken = async (clientRefreshToken) => {
   }
 }
 
+const update = async (userId, reqBody, userAvatarFile) => {
+  try {
+    // query user va kiem tra lai
+    const existUser = await userModel.findOneById(userId)
+    if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'account not found')
+    if (!existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'account not active')
+    // khởi tạo kết quả upadeuser
+    let updatedUser = {}
+    if (reqBody.current_password && reqBody.new_password) {
+     
+      // kiem tra current password dung hay khong
+      if (!bcryptjs.compareSync(reqBody.current_password, existUser.password)) {
+        throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your password or password is incorect!')
+      }
+      // neu dung mat khau thi hash mat khau moi va lưu database
+      updatedUser = await userModel.update(existUser._id, {
+        password: bcryptjs.hashSync(reqBody.new_password, 8)
+      })
+    } else if (userAvatarFile) {
+      // update file lên cloud storage, cloudinary
+      const uploadResult = await CloudinaryProvider.streamUpload(userAvatarFile.buffer, 'users')
+      // lưu url file ảnh trong database
+      updatedUser = await userModel.update(existUser._id, {
+        avatar : uploadResult.secure_url
+      })
+    } else {
+      updatedUser = await userModel.update(existUser._id, reqBody)
+    }
+    return pickUser(updatedUser)
+  } catch (error) {
+    throw error
+  }
+}
+
+
+
 export const userService = {
-  createNew, verifyAccount, login, refreshToken
+  createNew, verifyAccount, login, refreshToken, update
 
 }
