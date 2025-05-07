@@ -2,12 +2,12 @@
 import Joi from 'joi'
 import { EMAIL_RULE, EMAIL_RULE_MESSAGE } from '~/utils/validators'
 import { GET_DB } from '~/config/mongodb'
-import { ObjectId, ReturnDocument } from 'mongodb'
+import { ObjectId } from 'mongodb'
 
 // Define Collection (name & schema)
 const USER_ROLES = {
-    CLIENT: 'client',
-    ADMIN: 'admin'
+  CLIENT: 'client',
+  ADMIN: 'admin'
 }
 
 const USER_COLLECTION_NAME = 'users'
@@ -30,7 +30,7 @@ const INVALID_UPDATE_FIELDS = ['_id', 'email', 'username', 'createdAt']
 
 
 const validateBeforeCreate = async (data) => {
-    return await USER_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false})
+  return await USER_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
 }
 
 const createNew = async (data) => {
@@ -65,23 +65,22 @@ const findOneByEmail = async (emailValue) => {
 }
 
 const update = async (userId, updateData) => {
-
   // push 1 giá trị column id vào mảng order
-    try {
-      Object.keys(updateData).forEach(fieldName => {
-        if (INVALID_UPDATE_FIELDS.includes(fieldName)) {
-            delete updateData[fieldName]
-        }
-      })
-      const result = await GET_DB().collection(USER_COLLECTION_NAME).findOneAndUpdate(
-        {_id: new ObjectId(userId)},
-        {$set: updateData},
-        {ReturnDocument: 'after'}
-      )
-      return result
-    } catch (error) {
-      throw new Error(error)
-    }
+  try {
+    Object.keys(updateData).forEach(fieldName => {
+      if (INVALID_UPDATE_FIELDS.includes(fieldName)) {
+        delete updateData[fieldName]
+      }
+    })
+    const result = await GET_DB().collection(USER_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(userId) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    )
+    return result
+  } catch (error) {
+    throw new Error(error)
+  }
 }
 
 export const userModel = {
