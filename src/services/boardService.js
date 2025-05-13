@@ -6,8 +6,9 @@ import { StatusCodes } from 'http-status-codes'
 import { cloneDeep } from 'lodash'
 import { columnModel } from '~/models/columnModel'
 import { cardModel } from '~/models/cardModel'
+import { DEFAULT_ITEMS_PER_PAGE, DEFAULT_PAGE } from '~/utils/constants'
 
-const createNew = async (reqBody) => {
+const createNew = async (userId, reqBody) => {
   // eslint-disable-next-line no-useless-catch
   try {
     const newBoard = {
@@ -15,7 +16,7 @@ const createNew = async (reqBody) => {
       slug: slugify(reqBody.title)
     }
 
-    const createdBoard = await boardModel.createNew(newBoard)
+    const createdBoard = await boardModel.createNew(userId, newBoard)
 
     // lấy bản ghi board sau khi gọi
     const getNewBoard = await boardModel.findOneById(createdBoard.insertedId)
@@ -25,9 +26,9 @@ const createNew = async (reqBody) => {
     throw error
   }
 }
-const getDetails = async (boardId) => {
+const getDetails = async (userId, boardId) => {
   try {
-    const board = await boardModel.getDetails(boardId)
+    const board = await boardModel.getDetails(userId, boardId)
     if (!board) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found')
     }
@@ -79,9 +80,21 @@ const moveCardToDifferentColumn = async (reqBody) => {
   }
 }
 
+const getBoards = async (userId, page, itemsPerPage) => {
+  try {
+    if (!page) page = DEFAULT_PAGE
+    if (!itemsPerPage) itemsPerPage = DEFAULT_ITEMS_PER_PAGE
+    const results = await boardModel.getBoards(userId, parseInt(page, 10), parseInt(itemsPerPage, 10))
+    return results
+  } catch (error) {
+    throw error
+  }
+}
+
 export const boardService = {
   createNew,
   getDetails,
   update,
-  moveCardToDifferentColumn
+  moveCardToDifferentColumn,
+  getBoards
 }
