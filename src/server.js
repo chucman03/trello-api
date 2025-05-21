@@ -14,6 +14,10 @@ import { errorHandlingMiddleware } from './middlewares/errorHandlingMiddleware'
 import cors from 'cors'
 import { corsOptions } from './config/cors'
 import cookieParser from 'cookie-parser'
+import socketIo from 'socket.io'
+import http from 'http'
+import { inviteUserToBoardSocket } from './sockets/inviteUserToBoardSocket'
+
 
 const START_SERVER = () => {
   const app = express()
@@ -32,18 +36,27 @@ const START_SERVER = () => {
   //middleware xu ly loi tap trung
   app.use(errorHandlingMiddleware)
 
+  // tao server boc app express de lam realtime socketio
+  const server = http.createServer(app)
+  // khoi tao bien io voi server va cors
+  const io = socketIo(server, { cors: corsOptions })
+  io.on('connection', (socket) => {
+    // goi socket theo tinh nang
+    inviteUserToBoardSocket(socket)
+  })
+
   if (env.BUILD_MODE === 'production') {
     // môi trường production
-    app.listen(process.env.PORT, () => {
+    server.listen(process.env.PORT, () => {
       // eslint-disable-next-line no-console
-        console.log(`production Hello ${env.AUTHOR}, I am running at port ${process.env.PORT}`)
-      })
-  } else{
+      console.log(`production Hello ${env.AUTHOR}, I am running at port ${process.env.PORT}`)
+    })
+  } else {
     // môi trường dev
-    app.listen(process.env.LOCAL_DEV_APP_PORT, process.env.LOCAL_DEV_APP_HOST, () => {
+    server.listen(process.env.LOCAL_DEV_APP_PORT, process.env.LOCAL_DEV_APP_HOST, () => {
       // eslint-disable-next-line no-console
-        console.log(`Hello ${env.AUTHOR}, I am running at http://${process.env.LOCAL_DEV_APP_HOST}:${process.env.LOCAL_DEV_APP_PORT}/`)
-      })
+      console.log(`Hello ${env.AUTHOR}, I am running at http://${process.env.LOCAL_DEV_APP_HOST}:${process.env.LOCAL_DEV_APP_PORT}/`)
+    })
   }
 
  

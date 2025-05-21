@@ -1,7 +1,7 @@
 /* eslint-disable no-useless-catch */
 import { pickUser } from '~/utils/formatters'
 import ApiError from '~/utils/ApiError'
-import { StatusCodes } from 'http-status-codes'
+import { NOT_FOUND, StatusCodes } from 'http-status-codes'
 import { boardModel } from '~/models/boardModel'
 import { userModel } from '~/models/userModel'
 import { invitationModel } from '~/models/invitationModel'
@@ -28,19 +28,67 @@ const createNewBoardInvitation = async (reqBody, inviterId) => {
     }
     const createdInvitation = await invitationModel.createNewBoardInvitation(newInvitationData)
     const getInvitation = await invitationModel.findOneById(createdInvitation.insertedId.toString())
-    const resInvitaion = {
+    const resInvitation = {
         ...getInvitation,
         board,
         inviter: pickUser(inviter),
         invitee: pickUser(invitee)
     }
-    return resInvitaion
+    return resInvitation
   } catch (error) {
     throw error
   }
 }
 
+const getInvitations = async (userId) => {
+  try {
+    const getInvitations = await invitationModel.findByUser(userId)
+    // trả về kiểu object
+    const resInvitations = getInvitations.map(i => {
+      return {
+        ...i,
+        inviter: i.inviter[0] || {},
+        invitee: i.invitee[0] || {},
+        board: i.board[0] || {}
+
+      }
+    }) 
+    return resInvitations
+  } catch (error) {
+    throw error
+  }
+}
+
+const updateBoardInvitation = async (userId, invitationId, status) => {
+  try {
+    const getInvitation = await invitationModel.findOneById(invitationId)
+    if (!getInvitation) throw new ApiError(StatusCodes.NOT_FOUND, 'Invitation not found')
+    const boardId = getInvitation.boardInvitation.boardId
+    const getBoard = await boardModel.findOneById(boardId)
+    if (!getBoard) throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found')
+
+    const boardOwnerAndMemberIds = [...getBoard.ownerIds, ...getBoard.memberIds].toString()
+    if (status === BOARD_INVITATION_STATUS.ACCEPTED && boardOwnerAndMemberIds.includes(userId)) {
+      throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'you are already a member of this board')
+    }
+    const updateData = {
+      boardInvitation: {
+        ...getInvitation.boardInvitation,
+        status: status
+      }
+    }
+
+    const updatedInvitation = await invitationModel.update(invitationId, updateData)
+
+    if (updatedInvitation.boardInvitation.status === BOARD_INVITATION_STATUS.ACCEPTED) {
+      await boardModel.pushMemberIds(boardId, userId)
+    }
+    return updatedInvitation
+  } catch (error) {
+    throw error
+  }
+}
 
 export const invitationService = {
-  createNewBoardInvitation
+  createNewBoardInvitation, getInvitations, updateBoardInvitation
 }
