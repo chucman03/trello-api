@@ -171,7 +171,7 @@ const update = async (boardId, updateData) => {
   }
 }
 
-const getBoards = async (userId, page, itemsPerPage) => {
+const getBoards = async (userId, page, itemsPerPage, queryFilters) => {
   // push 1 giá trị column id vào mảng order
   try {
     const queryConditions = [
@@ -183,6 +183,21 @@ const getBoards = async (userId, page, itemsPerPage) => {
         { memberIds: { $all: [new ObjectId(userId)] } },
       ] }
     ]
+
+    // xử lý query filter cho từng trường hợp: ví dụ search theo title
+    if (queryFilters) {
+      Object.keys(queryFilters).forEach(key => {
+        // có phân biệt hoa thường
+        // queryConditions.push({
+        //   [key]: { $regex: queryFilters[key] }
+        // })
+        // không phân biệt hoa thường
+        queryConditions.push({
+          [key]: { $regex: new RegExp(queryFilters[key], 'i') }
+        })
+      })
+    }
+
     const query = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate(
       [
         { $match: { $and: queryConditions } },
@@ -212,6 +227,21 @@ const getBoards = async (userId, page, itemsPerPage) => {
   }
 }
 
+const pushMemberIds = async (boardId, userId) => {
+
+  // push 1 giá trị column id vào mảng order
+  try {
+    const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(boardId) },
+      { $push: { memberIds: new ObjectId(userId) } },
+      { returnDocument: 'after'}
+    )
+    return result
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
@@ -221,5 +251,6 @@ export const boardModel = {
   pushColumnOrderIds,
   update,
   pullColumnOrderIds,
-  getBoards
+  getBoards,
+  pushMemberIds
 }
